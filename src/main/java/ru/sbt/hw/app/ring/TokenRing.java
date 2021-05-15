@@ -19,9 +19,6 @@ public class TokenRing {
     public TokenRing(int nodesAmount, int dataAmount) {
         nodeList = new ArrayList<>();
         dataList = new ArrayList<>();
-        if (dataAmount % nodesAmount != 0) {
-            dataAmount += nodesAmount - (dataAmount % nodesAmount);
-        }
         setNodeList(nodesAmount, dataAmount);
         setDataList(dataAmount, nodesAmount - 1);
         executionInfo = new ExecutionInfo(nodesAmount, dataAmount);
@@ -50,12 +47,12 @@ public class TokenRing {
         for (DataPackage dataPackage : dataList) {
             time += dataPackage.getFinishTime() - dataPackage.getStartTime();
         }
-        executionInfo.setLatency((double)time / (1000000 * dataList.size()));
+        executionInfo.setLatency(((double)time / 1000000) / dataList.size());
         time = 0;
         for (Node node : nodeList) {
             time += node.getProcessingTime();
         }
-        executionInfo.setProcessingTime((double)time / (1000000 * nodeList.size()));
+        executionInfo.setProcessingTime(((double)time / 1000000) / nodeList.size());
     }
 
     private List<Future<?>> prepareFutureTask(ExecutorService executorService) {

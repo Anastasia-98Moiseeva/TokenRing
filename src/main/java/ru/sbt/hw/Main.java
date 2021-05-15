@@ -6,7 +6,7 @@ import ru.sbt.hw.app.TokenRingApplication;
 public class Main {
 
     public static void main(String[] args) {
-        TokenRingApplication app = new TokenRingApplication(5, 30, 5, 10000);
-        app.runApp(10, "/home/anastasia/Documents/mipt/concurency/TokenRing/datarr.txt");
+        TokenRingApplication app = new TokenRingApplication(5, 30, 5, 10000, 100000, 10000);
+        app.runApp(10, "/home/anastasia/Documents/mipt/concurency/TokenRing/data.txt");
     }
 }

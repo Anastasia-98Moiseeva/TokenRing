@@ -11,14 +11,19 @@ public class TokenRingApplication {
 
     private List<Configuration> configList;
 
-    public TokenRingApplication(int minThreadNum, int maxThreadNum, int step, int dataAmount) {
-        generateConfigList(minThreadNum, maxThreadNum, step, dataAmount);
+    public TokenRingApplication(int minThreadNum, int maxThreadNum, int threadNumStep, int minDataNum, int maxDataNum, int dataNumStep) {
+        generateConfigList(minThreadNum, maxThreadNum, threadNumStep, minDataNum, maxDataNum, dataNumStep);
     }
 
-    private void generateConfigList(int minThreadNum, int maxThreadNum, int step, int dataAmount) {
+    private void generateConfigList(int minThreadNum, int maxThreadNum, int threadNumStep, int minDataNum, int maxDataNum, int dataNumStep) {
         this.configList = new ArrayList<>();
-        for (int i = minThreadNum; i <= maxThreadNum; i+=step) {
-            configList.add(new Configuration(i, dataAmount));
+        for (int i = minThreadNum; i <= maxThreadNum; i += threadNumStep) {
+            for (int j = minDataNum; j <= maxDataNum; j += dataNumStep) {
+                if (j % i != 0) {
+                    j += i - (j % i);
+                }
+                configList.add(new Configuration(i, j));
+            }
         }
     }
 
@@ -26,7 +31,6 @@ public class TokenRingApplication {
         for (int i = 0; i < num; i++) {
             TokenRing tokenRing = new TokenRing(config.getThreadAmount(), config.getDataAmount());
             tokenRing.runTokenRing(executorService);
-            System.gc();
         }
     }
 
@@ -38,7 +42,6 @@ public class TokenRingApplication {
                 TokenRing tokenRing = new TokenRing(config.getThreadAmount(), config.getDataAmount());
                 tokenRing.runTokenRing(executorService);
                 tokenRing.writeInfoInFile(filePath);
-                System.gc();
             }
             executorService.shutdown();
         }
