@@ -33,7 +33,7 @@ public class Node implements Runnable {
         DataPackage dataPackage = dataQueue.poll();
         if (dataPackage != null) {
             finishedDataAmount++;
-            if (dataPackage.getId() == this.nodeId) {
+            if (dataPackage.getId() == nodeId) {
                 dataPackage.setFinishTime();
                 return;
             }
