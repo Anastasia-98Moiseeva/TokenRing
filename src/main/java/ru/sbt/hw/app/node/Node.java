@@ -1,37 +1,54 @@
 package ru.sbt.hw.app.node;
 
 import java.util.LinkedList;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class Node implements Runnable {
     private final int nodeId;
     private final int allDataAmount;
     private final LinkedList<DataPackage> initialData;
-    private final ConcurrentLinkedQueue<DataPackage> dataQueue;
+    private final LinkedList<DataPackage> dataQueue;
     private int finishedDataAmount;
     private long processingTime;
     private Node nextNode;
+    public Lock lock;
+    public Condition condition;
 
     public Node (int nodeId, int size, int pathLength) {
         this.nodeId = nodeId;
         this.allDataAmount = size * (pathLength);
         this.initialData = new LinkedList<>();
-        this.dataQueue = new ConcurrentLinkedQueue<>();
+        this.dataQueue = new LinkedList<>();
         this.finishedDataAmount = 0;
+        this.lock = new ReentrantLock();
+        this.condition = lock.newCondition();
     }
 
     public void run() {
         long startTime = System.nanoTime();
-        while (!initialData.isEmpty() || finishedDataAmount < allDataAmount) {
-            packageProcessing();
+        lock.lock();
+        try {
+            while (!initialData.isEmpty() || finishedDataAmount < allDataAmount) {
+                while (initialData.isEmpty() && dataQueue.isEmpty()) {
+                    condition.await();
+                }
+                packageProcessing();
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
         }
         processingTime += System.nanoTime() - startTime;
     }
 
     private void packageProcessing() {
-        DataPackage dataPackage = dataQueue.poll();
-        if (dataPackage != null) {
+        if (!dataQueue.isEmpty()) {
+            DataPackage dataPackage = dataQueue.poll();
             finishedDataAmount++;
             if (dataPackage.getId() == nodeId) {
                 dataPackage.setFinishTime();
@@ -40,17 +57,20 @@ public class Node implements Runnable {
             if (!dataPackage.getWasSent()) {
                 dataPackage.setStartTime();
             }
-            nextNode.addDataToQueue(dataPackage);
+            addDataToNextNodeQueue(dataPackage);
             return;
         }
-        if (!initialData.isEmpty()) {
-            dataPackage = initialData.poll();
-            nextNode.addDataToQueue(dataPackage);
-        }
+        DataPackage dataPackage = initialData.poll();
+        addDataToNextNodeQueue(dataPackage);
     }
 
-    private void addDataToQueue(DataPackage dataPackage) {
-        dataQueue.add(dataPackage);
+    private void addDataToNextNodeQueue(DataPackage dataPackage) {
+        lock.unlock();
+        nextNode.lock.lock();
+        nextNode.dataQueue.add(dataPackage);
+        nextNode.condition.signalAll();
+        nextNode.lock.unlock();
+        lock.lock();
     }
 
     public void addInitialData(DataPackage dataPackage) {
